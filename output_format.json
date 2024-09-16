@@ -1,0 +1,69 @@
+[
+    {
+        "column_name": "output_column_name_1",
+        "input_columns": [
+            {
+                "name": "input_column_name_1",
+                "table": "input_table_name_1",
+                "transformation": "<describe the transformations done on input_column_name_1 to transform it to output_column_name_1>"
+            },
+            {
+                "name": "input_column_name_2",
+                "table": "input_table_name_2",
+                "transformation": "<describe the transformations done on input_column_name_2 to transform it to output_column_name_1>"
+            }
+        ]
+    },
+    {
+        "column_name": "output_column_name_2",
+        "input_columns": [
+            {
+                "name": "input_column_name_3",
+                "table": "input_table_name_3",
+                "transformation": "<describe the transformations done on input_column_name_3 to transform it to output_column_name_2>"
+            }
+        ]
+    }
+]
+
+{
+    "column": "output_column_name",
+    "steps": {
+        "cte": "cte_name",
+        "column": "cte_column_name",
+        "derived_from": [{
+            "source_table": "table_name",
+            "column": "table_column_name"
+        }]
+    },
+    "lineage": [{
+        "source_table": "table_name",
+        "column": "table_column_name"
+    }]
+}
+
+"lineage": [
+    {
+        "source_table": "dim_schools",
+        "column": "school_district_id"
+    },
+    {
+        "source_table": "int_active_sections",
+        "column": "course_name"
+    },
+    {
+        "source_table": "school_years",
+        "column": "school_year"
+    },
+]
+
+
+prompt="""You are a data analyst who is teaching someone how to trace the column lineage of a dbt SQL model. Given a column from the output model, find the column(s) and source table(s) that the given column directly derives from. Intermediate CTEs cannot be considered source tables. Walk through how you trace through the code. After thinking about it, return only the final answer in a JSON format. The JSON should look something like the following:
+
+{
+    "column": "output_column_name",
+    "lineage": [{
+        "source_table": "table_name",
+        "column": "table_column_name"
+    }, {...}]
+}"""

@@ -1,0 +1,35 @@
+services:
+  neo4j:
+    container_name: neo4j
+    hostname: neo4j
+    image: neo4j:5.23.0
+    ports:
+      - 7474:7474
+      - 7687:7687
+    environment:
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD}
+      # - NEO4J_apoc_export_file_enabled=true
+      # - NEO4J_apoc_import_file_enabled=true
+      # - NEO4J_apoc_import_file_use__neo4j__config=true
+      # - NEO4J_PLUGINS=["apoc", "graph-data-science"]
+    volumes:
+      - ./neo4j_db/data:/data
+      - ./neo4j_db/logs:/logs
+      - ./neo4j_db/import:/var/lib/neo4j/import
+      - ./neo4j_db/plugins:/plugins
+
+    # Simple check testing whether the port 7474 is opened.
+    # If so, the instance running inside the container is considered as "healthy".
+    # This status can be checked using the "docker ps" command.
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1"]
+
+  app:
+    build: .
+    hostname: app
+    ports:
+      - "8501:8501"
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
