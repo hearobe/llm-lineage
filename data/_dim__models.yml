@@ -1,0 +1,145 @@
+models:
+  - name: dim_schools
+    columns:
+    - name: school_id
+      description: the NCES id associated with a school 
+      data_tests:
+        - not_null
+        - unique
+
+    - name: last_survey_year 
+      description: the school year associated with the most recent information about this school from NCES
+    
+    - name: is_stage_el
+      description: binary; 1 if the school has any grade levels 0-5, 0 if not 
+    
+    - name: is_stage_mi
+      description: binary; 1 if the school has any grade levels 6-8, 0 if not 
+    
+    - name: is_stage_hi
+      description: binary; 1 if the school has any grade levels 9-12, 0 if not 
+    
+    - name: school_level_simple
+      description: a combination of all school levels the school contains, separated by underscores
+    
+    - name: total_urg_no_tr_students
+      description: total number of URG students, excluding those identifying as two or more races
+
+  - name: dim_districts
+    columns:
+    - name: school_district_id
+      data_tests:
+        - not_null
+        - unique
+      description: unique ID for each school district, as defined by NCES. 
+    - name: school_district_name
+      description: NCES name of school district 
+    - name: school_district_city
+      description: NCES city the district resides in 
+    - name: school_district_state
+      description: NCES state the district resides in
+    - name: school_district_zip
+      description: NCES zip code the district resides in
+    - name: last_known_school_year_open
+      description: NCES last year the school was confirmed open
+    - name: num_schools
+      description: the number of schools in the district
+    - name: num_schools_stage_el
+      description: the number of schools with grades 0-5 in the district
+    - name: num_schools_stage_mi
+      description: the number of schools with grades 6-8 in the district
+    - name: num_schools_stage_hi
+      description: the number of schools with grades 9-12 in the district
+    - name: num_schools_rural
+      description: the number of rural schools in the district
+    - name: num_schools_title_i
+      description: the numebr of title I schools in the district
+    - name: num_schools_high_needs
+      description: the number of high needs schools (> 50% FRL eligible) in the district 
+    - name: num_students
+      description: the number of students across all schools in district
+    - name: num_students_frl_eligible
+      description: the number of students who are eligible for free and reduced lunch in the district 
+    - name: num_students_urg
+      description: the number of students from an underrepresented racial group (not white or asian) in the district
+    - name: district_urg_percent
+      description: the percent of students in the district who are from an underrepresented racial group (not white or asian)
+    - name: district_frl_eligible_percent
+      description: the percent of students in the district who are eligible for free and reduced lunch
+
+  - name: dim_user_course_activity
+    columns:
+    - name: course_name
+    - name: first_activity_at
+    - name: user_id
+    - name: school_year
+
+  - name: dim_course_structure
+    columns:
+    - name: level_id
+    - name: script_id
+    - name: course_name
+
+  - name: dim_users
+    columns:
+    - name: user_id
+      description: UID for each user
+      data_tests: 
+        - not_null
+
+    - name: user_type
+      description: student or teacher if NULL = fail
+          # - accepted_values:
+          #     values: ['teacher','student']
+      data_tests: 
+          - not_null
+
+    - name: us_state
+      description: user entered value extracted from json. values must be within contig. US else null 
+
+    - name: student_id 
+      description: UID for each student
+    
+    - name: teacher_id 
+      description: UID for each teacher
+
+    - name: races
+      description: raw value for race 
+      tags: 
+        - contains_pii
+
+    - name: race_group
+      description: race categorization column
+      tags: 
+        - contains_pii
+    
+    - name: gender 
+      description: raw value for gender
+      tags: 
+        - contains_pii
+    
+    - name: gender_group
+      description: gender categorization column
+      tags: 
+        - contains_pii
+
+    - name: cap_status
+      description: child account policy tag; only relevant for students (options are 'grace period', 'locked_out', 'permission_granted')
+        
+    - name: cap_status_date
+      description: child account policy tag; 
+
+  - name: dim_course_names
+    columns:
+    - name: versioned_course_id
+    - name: versioned_course_name
+    - name: course_name_short
+    - name: course_name_long
+
+  - name: dim_script_names
+    columns:
+    - name: versioned_script_id
+    - name: versioned_script_name
+    - name: script_name_short
+    - name: script_name_long
+

@@ -1,0 +1,5 @@
+/repo
+/neo4j_db
+.git
+.env
+test.py

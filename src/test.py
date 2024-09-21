@@ -1,6 +1,22 @@
-import os
+# import os
 import json5
-from neo4j import GraphDatabase
+# from neo4j import GraphDatabase
+
+from db_service import DBService
+from openai_service import ColumnLineageResponse
+
+db = DBService()
+print(db.get_status())
+
+# db.init_database()
+db.set_status("in_progress")
+print(db.get_status())
+
+
+
+
+
+
 
 #  FILE DIRECTORY DISCOVERY AND TRAVERSAL
 # yaml_files = []
@@ -19,7 +35,4 @@ from neo4j import GraphDatabase
 
 # print(yaml_files)
 
-# JSON PROBLEMS
-string = """{'column': "status", "lineage": [{"source_table": "full_status", "column": "status_code", "transformation_summary": "Mapped from status_code to corresponding status based on predefined case conditions.",}]}"""
-result = json5.loads(string)
-print(result)
+

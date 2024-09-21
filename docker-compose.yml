@@ -25,11 +25,20 @@ services:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1"]
 
   app:
-    build: .
+    build:
+      context: .
+      args:
+        REPOSITORY_URL: ${REPOSITORY_URL}
     hostname: app
     ports:
-      - "8501:8501"
+      - 8000:8000
+    volumes:
+      - repo:/app/repo
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       NEO4J_PASSWORD: ${NEO4J_PASSWORD}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+    
+  
+volumes:
+  repo:

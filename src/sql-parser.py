@@ -10,25 +10,25 @@ db = DBService()
 dirname = os.path.dirname(__file__)
 path = os.path.join(dirname, '../data/dim_district_status.sql')
 
-# # Verify the SQL model exists in the schema
-# output_table = db.find_one_table("dim_district_status")
-# print(output_table)
+# Verify the SQL model exists in the schema
+output_table = db.find_one_table("dim_district_status") # TODO: add error checking. does not throw error within fn
+print(output_table)
 
-# # Retrieve output columns of the table
-# output_columns = db.find_columns_of_table("dim_district_status")
-# print(output_columns)
+# Retrieve output columns of the table
+output_columns = db.find_columns_of_table("dim_district_status")
+print(output_columns)
 
-output_columns = [
-    {
-        "name": "status"
-    },
-    {
-        "name": "school_year"
-    },
-    {
-        "name": "school_district_id"
-    }
-]
+# output_columns = [
+#     {
+#         "name": "status"
+#     },
+#     {
+#         "name": "school_year"
+#     },
+#     {
+#         "name": "school_district_id"
+#     }
+# ]
 
 full_query = Path(path).read_text()
 
@@ -42,25 +42,6 @@ for output_column in output_columns:
     print(output_column)
     sources = llm.get_column_lineage(output_column["name"])
 
-
-    # response = """
-    # {
-    #     "column": "status",                                                                                                                
-    #     "lineage": [                                                                                                                         
-    #         {                                                                                                                                
-    #             "source_table": "int_active_sections",
-    #             "column": "course_name",
-    #             "transformation_summary": "No transformations done"                                                                                     
-    #         },
-    #         {
-    #             "source_table": "dim_schools",
-    #             "column": "school_id",
-    #             "transformation_summary": "No transformations done"   
-    #         }                                                                                                                                
-    #     ]                                                                                                                                    
-    # }"""
-
-
     validated_sources = []
     unvalidated_sources = sources["lineage"]
     incorrect_sources = []
@@ -72,27 +53,16 @@ for output_column in output_columns:
             else:
                 print("source table not found")
                 incorrect_sources.append(element)
-        
-        # print(f"try {10-retry_limit} valid")
-        # print(validated_sources)
-        # print(f"try {10-retry_limit} incorrect")
-        # print(incorrect_sources)
 
         if len(incorrect_sources) == 0:
             break
 
         retry_limit -= 1
         unvalidated_sources = llm.get_corrected_column_lineage(incorrect_sources)["lineage"]
-        # print("response from get_corrected_column_lineage")
-        # print(unvalidated_sources)
-        # print(type(unvalidated_sources))
         incorrect_sources = []
 
     print("----------------validation completed----------------")
     print(validated_sources)
-    # print(incorrect_sources)
-    # print(unvalidated_sources)
-
 
     for source in validated_sources:
         db.create_column_lineage_relationships(

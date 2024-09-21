@@ -1,3 +1,4 @@
+from typing import List
 import json5
 from pydantic import BaseModel
 from openai import OpenAI
@@ -6,6 +7,7 @@ client = OpenAI()
 class SourceTableAndColumn(BaseModel):
     source_table: str
     column: str
+    transformation_summary: str
 
 class ColumnLineageResponse(BaseModel):
     column: str
@@ -45,7 +47,7 @@ class ChatSession:
             }
         ]
     
-    def get_column_lineage(self, column:str):
+    def get_column_lineage(self, column:str) -> List[SourceTableAndColumn] | None:
         self.messages.append({
                 "role": "user",
                 "content": f"get lineage of {column}"
@@ -53,20 +55,18 @@ class ChatSession:
         completion = client.beta.chat.completions.parse(
             model="gpt-4o-mini",
             messages=self.messages,
-            # response_format=ColumnLineageResponse,
             temperature=1,
             max_tokens=2048,
             top_p=1,
             frequency_penalty=0.2,
         )
 
-        print(f"""resut from get_column_lineage:
-              {completion.choices[0].message.content}""")
+        # print(f"""resut from get_column_lineage:
+        #       {completion.choices[0].message.content}""")
 
-        return json5.loads(completion.choices[0].message.content)
+        return self.get_parsed_response(completion.choices[0].message.content)
 
-    
-    def get_corrected_column_lineage(self, incorrect_sources: list):
+    def get_corrected_column_lineage(self, incorrect_sources: list) -> List[SourceTableAndColumn] | None:
         self.messages.append({
                 "role": "user",
                 "content": f"""{incorrect_sources}
@@ -76,14 +76,53 @@ class ChatSession:
         completion = client.beta.chat.completions.parse(
             model="gpt-4o-mini",
             messages=self.messages,
-            # response_format=ColumnLineageResponse,
             temperature=1,
             max_tokens=2048,
             top_p=1,
             frequency_penalty=0.2,
         )
 
-        print(f"""resut from get_corrected_column_lineage:
-              {completion.choices[0].message.content}""")
+        # print(f"""resut from get_corrected_column_lineage:
+        #       {completion.choices[0].message.content}""")
 
-        return json5.loads(completion.choices[0].message.content)
+        return self.get_parsed_response(completion.choices[0].message.content)
+    
+    def get_parsed_response(self, unformatted: str):
+        try:
+            response = ColumnLineageResponse(**json5.loads(unformatted))
+            return response.lineage
+        except:
+            print("bad formatting")
+            print(unformatted)
+            self.messages.append({
+                "role": "user",
+                "content": f"""{unformatted}
+                
+                Formatting here is incorrect. Please make sure this is a valid JSON format that looks something like the following:
+
+                    {{
+                        "column": "output_column_name",
+                        "lineage": [{{
+                            "source_table": "table_name",
+                            "column": "table_column_name",
+                            "transformation_summary": "description of transformations done"
+                        }}, {{...}}]
+                    }}
+                """
+            })
+            completion = client.beta.chat.completions.parse(
+                model="gpt-4o-mini",
+                messages=self.messages,
+                temperature=1,
+                max_tokens=2048,
+                top_p=1,
+                frequency_penalty=0.2,
+            )
+            try:
+                print("formatting fixed?")
+                print(completion.choices[0].message.content)
+                response = ColumnLineageResponse(**json5.loads(completion.choices[0].message.content))
+                return response.lineage
+            except:
+                return None
+

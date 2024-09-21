@@ -1,0 +1,357 @@
+models:
+  - name: seed_school_years
+    description: used by int_school_weeks and int_school_years
+    columns:
+    - name: school_year
+    - name: school_year_int
+    - name: started_at
+    - name: ended_at
+    - name: school_year_long
+  
+  - name: stg_dashboard__followers
+    description: used by int_section_mapping
+    columns:
+    - name: student_id
+    - name: student_removed_at
+    - name: section_id
+    - name: student_added_at
+    - name: student_user_id
+    - name: created_at
+  
+  - name: stg_dashboard__sections
+    description: int_section_mapping
+    columns:
+    - name: section_id
+    - name: teacher_id
+    - name: user_id
+    - name: section_name
+    - name: created_at
+    - name: section_type
+    - name: login_type
+    - name: grade
+    - name: updated_at
+  
+  - name: base_dashboard__parent_levels_child_levels
+    columns:
+    - name: parent_level_id
+    - name: child_level_id
+    - name: kind
+    - name: position
+  
+  - name: stg_dashboard__user_levels
+    columns:
+    - name: user_id
+    - name: created_at
+    - name: updated_at
+    - name: level_id
+    - name: script_id
+  
+  - name: stg_dashboard__sign_ins
+    columns:
+    - name: user_id
+    - name: sign_in_at
+  
+  - name: stg_dashboard__user_project_storage_ids
+    columns:
+    - name: user_id
+    - name: user_project_storage_id
+    - name: created_at
+  
+  - name: stg_dashboard_pii__projects
+    columns:
+    - name: storage_id
+    - name: project_type
+  
+  - name: stg_external_datasets__ap_agg_exam_results
+    columns:
+    - name: exam_year
+    - name: pd_year
+    - name: reporting_group
+    - name: rp_id
+    - name: exam
+    - name: demographic_category
+    - name: demographic_group
+    - name: score_category
+    - name: score_of
+    - name: num_students
+
+  - name: stg_external_datasets__ap_school_level_exam_results
+    columns:
+      - name: exam_year
+      - name: pd_year
+      - name: reporting_group
+      - name: rp_id
+      - name: exam
+      - name: demographic_category
+      - name: demographic_group
+      - name: score_category
+      - name: score_of
+      - name: num_students
+      
+  - name: stg_external_datasets__districts_enrolled
+    columns:
+      - name: school_year_enrolled
+      - name: district_id
+  
+  - name: stg_dashboard__schools
+    columns:
+      - name: school_id
+      - name: school_district_id
+      - name: school_name
+      - name: city
+      - name: state
+      - name: zip
+      - name: school_type
+      - name: created_at
+      - name: updated_at
+      - name: address_line1
+      - name: address_line2
+      - name: address_line3
+      - name: latitude
+      - name: longitude
+      - name: school_category
+      - name: last_known_school_year_open
+
+  - name: stg_dashboard__school_districts
+    columns:
+      - name: school_district_id
+      - name: school_district_name
+      - name: school_district_city
+      - name: school_district_state
+      - name: school_district_zip
+      - name: last_known_school_year_open
+
+  - name: stg_dashboard__school_stats_by_years
+    columns:
+      - name: school_id
+      - name: school_year
+      - name: survey_year
+      - name: first_survey_year
+      - name: grades_offered_lo
+      - name: grades_offered_hi
+      - name: is_grade_pk
+      - name: is_grade_kg
+      - name: is_grade_01
+      - name: is_grade_02
+      - name: is_grade_03
+      - name: is_grade_04
+      - name: is_grade_05
+      - name: is_grade_06
+      - name: is_grade_07
+      - name: is_grade_08
+      - name: is_grade_09
+      - name: is_grade_10
+      - name: is_grade_11
+      - name: is_grade_12
+      - name: is_grade_13
+      - name: virtual_status
+      - name: title_i_status
+      - name: total_students
+      - name: count_student_am
+      - name: count_student_as
+      - name: count_student_hi
+      - name: count_student_bl
+      - name: count_student_wh
+      - name: count_student_hp
+      - name: count_student_tr
+      - name: total_frl_eligible_students
+      - name: created_at
+      - name: updated_at
+      - name: community_type
+      - name: is_title_i
+      - name: is_rural
+      - name: is_stage_el
+      - name: is_stage_mi
+      - name: is_stage_hi
+
+  - name: stg_dashboard_pii__user_school_infos
+    columns:
+      - name: user_school_info_id
+      - name: user_id
+      - name: started_at
+      - name: ended_at
+      - name: school_info_id
+      - name: last_confirmation_at
+      - name: created_at
+      - name: updated_at 
+
+  - name: stg_dashboard__school_infos
+    columns: 
+      - name: school_info_id
+      - name: country
+      - name: school_type
+      - name: zip
+      - name: state
+      - name: school_district_id
+      - name: school_district_other
+      - name: school_district_name
+      - name: school_id  
+      - name: school_other
+      - name: school_name
+      - name: full_address
+      - name: created_at
+      - name: updated_at
+      - name: validation_type
+
+  - name: stg_dashboard__scripts
+    columns: 
+      - name: script_name
+      - name: script_id
+      - name: wrapup_video_id
+      - name: user_id
+      - name: login_required
+      - name: new_name
+      - name: family_name
+      - name: published_state
+      - name: instruction_type
+      - name: instructor_audience
+      - name: participant_audience
+      - name: course_name
+      - name: supported_locales
+      - name: version_year
+      - name: is_standalone
+      - name: unit
+      - name: created_at
+      - name: updated_at
+
+  - name: stg_dashboard__levels
+    columns: 
+      - name: level_id
+      - name: level_name
+      - name: level_type
+      - name: level_num
+      - name: ideal_level_source_id
+      - name: user_id
+      - name: game_id
+      - name: md5
+      - name: is_published
+      - name: mini_rubric
+      - name: is_free_play
+      - name: project_template_level_name
+      - name: is_submittable
+      - name: audit_log
+      - name: notes
+      - name: properties
+      - name: created_at
+      - name: updated_at
+
+  - name: stg_dashboard__stages
+    columns: 
+      - name: stage_id
+      - name: stage_name
+      - name: stage_number
+      - name: script_id
+      - name: lesson_group_id
+      - name: absolute_position
+      - name: relative_position
+      - name: key
+      - name: has_lesson_plan
+      - name: is_lockable
+      - name: is_unplugged
+      - name: created_at
+      - name: updated_at
+
+  - name: stg_dashboard__script_levels
+    columns: 
+      - name: script_level_id
+      - name: script_id
+      - name: chapter
+      - name: stage_id
+      - name: position
+      - name: is_assessment
+      - name: is_named_level
+      - name: is_bonus
+      - name: is_challenge
+      - name: activity_section_id
+      - name: activity_section_position
+      - name: seed_key
+      - name: created_at
+      - name: updated_at
+
+  - name: stg_dashboard__levels_script_levels
+    columns: 
+      - name: script_level_id
+      - name: level_id
+
+  - name: stg_dashboard__course_scripts
+    columns: 
+      - name: course_script_id
+      - name: course_id
+      - name: script_id
+
+  - name: stg_dashboard__unit_groups
+    columns: 
+      - name: unit_group_id
+      - name: unit_group_name
+      - name: published_state
+      - name: instruction_type
+      - name: instructor_audience
+      - name: participant_audience
+      - name: family_name
+      - name: version_year
+      - name: created_at
+      - name: updated_at
+  
+  - name: stg_dashboard__contained_levels
+    columns: 
+      - name: contained_levels_id
+      - name: level_group_level_id
+      - name: contained_level_id
+      - name: contained_level_type
+      - name: contained_level_page
+      - name: contained_level_position
+      - name: contained_level_text
+      - name: created_at
+      - name: updated_at
+
+  - name: stg_dashboard__users
+    columns: 
+      - name: user_id
+      - name: student_id
+      - name: teacher_id
+      - name: user_type
+      - name: studio_person_id
+      - name: school_info_id
+      - name: is_urg
+      - name: gender
+      - name: locale
+      - name: birthday
+      - name: sign_in_count
+      - name: total_lines,    
+      - name: current_sign_in_at
+      - name: last_sign_in_at
+      - name: created_at
+      - name: updated_at, 
+      - name: deleted_at,  
+      - name: purged_at
+      - name: cap_status
+      - name: cap_status_date
+  
+  - name: stg_dashboard__user_geos
+    columns: 
+      - name: user_id
+      - name: city
+      - name: state
+      - name: postal_code
+      - name: country
+      - name: is_international
+      - name: us_intl
+      - name: created_at
+      - name: updated_at
+      - name: indexed_at
+
+  - name: stg_dashboard_pii__users
+    columns: 
+      - name: user_id
+      - name: name
+      - name: user_type
+      - name: student_id
+      - name: teacher_id
+      - name: as teacher_email
+      - name: birthday
+      - name: age_years
+      - name: races
+      - name: self_reported_state
+      - name: race_group
+      - name: gender
+      - name: gender_group
