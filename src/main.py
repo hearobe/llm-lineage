@@ -3,7 +3,8 @@ from typing import Union
 from fastapi import FastAPI, BackgroundTasks
 from pydantic import BaseModel
 
-from api_methods import initiate_lineage_trace
+from api_methods import get_lineage_of_column, initiate_lineage_trace
+from test import manual_testing
 
 app = FastAPI()
 
@@ -13,13 +14,18 @@ def read_root():
 
 
 @app.get("/lineage")
-def get_lineage(column_name: str, table_name: str):
-    return {"column_name": column_name, "table_name": table_name}
+def get_lineage(column_name: str, table_name: str, downstream_only: bool = False, upstream_only: bool = False):
+    return get_lineage_of_column(column_name, table_name, downstream_only, upstream_only)
 
 @app.post("/request-lineage-trace")
 def request_lineage_trace(background_tasks: BackgroundTasks):
     background_tasks.add_task(initiate_lineage_trace)
     return {"message": "Lineage trace started"}
+
+@app.post("/test")
+def test():
+    manual_testing()
+    return {"message": "initiated test"}
 
 class LineageTraceStatus(BaseModel):
     succeeded: bool

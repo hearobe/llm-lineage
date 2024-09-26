@@ -4,8 +4,6 @@ import yaml
 
 class FileService:
     def __init__(self):
-        print("Initializing FileService")
-
         # find root of repo
         repo_paths: List[Path] = []
         for path in Path().rglob("repo/"):
@@ -25,22 +23,10 @@ class FileService:
         self.dbt_project_file_path = dbt_project_file_paths[0]
         self.dbt_project_dir_path = self.dbt_project_file_path.parent
 
-        # TESTING
-        print("FileService initialized")
-        print(self.repo_root)
-        print(self.dbt_project_file_path)
-        print(self.dbt_project_dir_path)
-    
     def get_schema_and_model_files(self):
-        print("in get_schema_and_model_files")
-
         # find directories where models are stored (specified in dbt_project.yml)
         dbt_project_file = yaml.safe_load(open(self.dbt_project_file_path))
         model_paths = [self.dbt_project_dir_path.joinpath(x) for x in dbt_project_file["model-paths"]]
-
-        print(dbt_project_file)
-        print(dbt_project_file["model-paths"])
-        print(model_paths)
 
         # push yml and sql files in model paths into schema and model file arrays
         schema_files: List[Path] = []

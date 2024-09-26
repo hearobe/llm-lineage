@@ -2,6 +2,8 @@ from typing import List
 import json5
 from pydantic import BaseModel
 from openai import OpenAI
+
+from db_service import DBService
 client = OpenAI()
 
 class SourceTableAndColumn(BaseModel):
@@ -17,11 +19,15 @@ class ChatSession:
     def __init__(self, model_name: str, model: str):
         self.model = model
         self.model_name = model_name
+
+        db = DBService()
+        self.schema = db.get_source_table_schema(self.get_source_table_names())
+
         self.messages = [
             {
                 "role": "system",
                 "content": 
-                    f"""You are a data analyst who is teaching someone how to trace the column lineage of a dbt SQL model.
+                    f"""You are a data analyst who is teaching someone how to trace the column lineage of a dbt SQL model with the help of the source table schema.
                     Given a column from the output model, find the column(s) and source table(s) that the given column directly
                     derives from. Intermediate CTEs cannot be considered source tables. Walk through how you trace through the code.
                     After thinking about it, return only the source tables and columns. For each source column,
@@ -38,7 +44,9 @@ class ChatSession:
                         }}, {{...}}]
                     }}
                     
-                    Only return JSON. Do not return any plaintext or formatting.
+                    Only return a single JSON object. Do not return any plaintext or formatting.
+
+                    schema: {self.schema}
                     
                     model name: {model_name}
 
@@ -46,6 +54,33 @@ class ChatSession:
                     {model}"""
             }
         ]
+
+    def get_source_table_names(self):
+        self.messages = [
+            {
+                "role": "system",
+                "content": 
+                    f"""You are a data analyst who wants to find the source tables given an SQL query. Return the source tables as a single JSON object that looks like the following, without any plaintext or formatting.
+                        {{
+                            "source_tables": ["table_name_1", "table_name_2", ...]
+                        }}"""
+            }, 
+            {
+                "role": "user",
+                "content": f"{self.model}"
+            }
+        ]
+
+        completion = client.beta.chat.completions.parse(
+            model="gpt-4o-mini",
+            messages=self.messages,
+            temperature=1,
+            max_tokens=2048,
+            top_p=1,
+            frequency_penalty=0.2,
+        )
+
+        return json5.loads(completion.choices[0].message.content)["source_tables"]
     
     def get_column_lineage(self, column:str) -> List[SourceTableAndColumn] | None:
         self.messages.append({
@@ -61,9 +96,6 @@ class ChatSession:
             frequency_penalty=0.2,
         )
 
-        # print(f"""resut from get_column_lineage:
-        #       {completion.choices[0].message.content}""")
-
         return self.get_parsed_response(completion.choices[0].message.content)
 
     def get_corrected_column_lineage(self, incorrect_sources: list) -> List[SourceTableAndColumn] | None:
@@ -71,7 +103,7 @@ class ChatSession:
                 "role": "user",
                 "content": f"""{incorrect_sources}
                 
-                These do not seem like the right source tables or columns. Can you find the sources of these intermediate tables or columns?"""
+                These do not seem like the right source tables or columns. Can you try again?"""
             })
         completion = client.beta.chat.completions.parse(
             model="gpt-4o-mini",
@@ -82,9 +114,6 @@ class ChatSession:
             frequency_penalty=0.2,
         )
 
-        # print(f"""resut from get_corrected_column_lineage:
-        #       {completion.choices[0].message.content}""")
-
         return self.get_parsed_response(completion.choices[0].message.content)
     
     def get_parsed_response(self, unformatted: str):
@@ -92,13 +121,11 @@ class ChatSession:
             response = ColumnLineageResponse(**json5.loads(unformatted))
             return response.lineage
         except:
-            print("bad formatting")
-            print(unformatted)
             self.messages.append({
                 "role": "user",
                 "content": f"""{unformatted}
                 
-                Formatting here is incorrect. Please make sure this is a valid JSON format that looks something like the following:
+                Formatting here is incorrect. Please make sure this is a valid JSON format that looks something like the following. Only one JSON object should be returned.
 
                     {{
                         "column": "output_column_name",
@@ -119,8 +146,6 @@ class ChatSession:
                 frequency_penalty=0.2,
             )
             try:
-                print("formatting fixed?")
-                print(completion.choices[0].message.content)
                 response = ColumnLineageResponse(**json5.loads(completion.choices[0].message.content))
                 return response.lineage
             except:

@@ -22,8 +22,7 @@ COPY ./src /app/src
 
 # # TODO remove after testing is complete
 # # COPY ./data /app/data
-# # CMD ["python", "src/sql-parser.py"]
+# CMD ["python", "src/test.py"]
 
 # starts the API
 CMD ["fastapi", "run", "src/main.py", "--port", "8000"]
-# CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

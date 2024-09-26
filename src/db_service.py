@@ -4,6 +4,7 @@ from neo4j import GraphDatabase
 class DBService:
     def __init__(self):
         URI = "neo4j://neo4j"
+        # URI = "neo4j://localhost"
         AUTH = ("neo4j", os.environ["NEO4J_PASSWORD"])
         self.driver = GraphDatabase.driver(URI, auth=AUTH)
         self.database_ = "neo4j"
@@ -101,9 +102,7 @@ class DBService:
             return False
         return True
     
-    # TODO: prevent duplicates: if the relationship already exists, update it with transformation summary
     def create_column_lineage_relationships(self, source_table: str, source_column: str, output_table: str, output_column: str, transformation_summary: str):
-        print(f"entered create_column_lineage_relationships with source ({source_table}, {source_column}) and output ({output_table}, {output_column})")
         summary = self.driver.execute_query(
             """MATCH (source_column:Column {name: $source_column, table_name: $source_table})
                 MATCH (output_column:Column {name: $output_column, table_name: $output_table})
@@ -117,7 +116,139 @@ class DBService:
             database_=self.database_,
         ).summary
 
-        print("{summary.counters.relationships_created} relationships created between source ({source_table}, {source_column}) and output ({output_table}, {output_column})")
+        print(f"{summary.counters.relationships_created} relationships created between source ({source_table}, {source_column}) and output ({output_table}, {output_column})")
+
+    def get_source_table_schema(self, source_tables: list[str]):
+        result = {}
+        for source_table in source_tables:
+            column_records, _, _ = self.driver.execute_query(
+                """MATCH (c:Column {table_name: $source_table})
+                    RETURN c.name as name""",
+                source_table=source_table,
+                database_=self.database_,
+            )
+            columns = []
+            for record in column_records:
+                columns.append(record["name"])
+            result[source_table] = columns
+        
+        return result
+    
+    def get_lineage(self, column_name: str, table_name: str, downstream_only: bool = False, upstream_only: bool = False):
+        if downstream_only and upstream_only:
+            print("downstream_only and upstream_only cannot both be true")
+            return None
+
+        downstream_nodes = self.get_downstream_lineage_nodes(column_name=column_name, table_name=table_name) if not downstream_only else []
+        upstream_nodes = self.get_upstream_lineage_nodes(column_name=column_name, table_name=table_name) if not upstream_only else []
+        downstream_edges = self.get_downstream_lineage_edges(column_name=column_name, table_name=table_name) if not downstream_only else []
+        upstream_edges = self.get_upstream_lineage_edges(column_name=column_name, table_name=table_name) if not upstream_only else []
+
+        nodes = [
+            {
+                "id": node["column_id"],
+                "column_name": node["column_name"],
+                "table_name": node["table_name"]
+            }
+            for node in downstream_nodes + upstream_nodes
+        ]
+        nodes.insert(0, {
+                    "id": f"{table_name}|{column_name}",
+                    "column_name": column_name,
+                    "table_name": table_name
+                })
+        edges = downstream_edges + upstream_edges
+        result = {
+            "nodes": nodes,
+            "edges": [
+                {
+                    "startId": edge["start_id"],
+                    "startColumnName": edge["start_column_name"],
+                    "startTableName": edge["start_table_name"],
+                    "endId": edge["end_id"],
+                    "endColumnName": edge["end_column_name"],
+                    "endTableName": edge["end_table_name"],
+                    "transformationSummary": edge["transformation_summary"]
+                }
+                for edge in edges
+            ]
+        }
+        return result
+
+    
+    def get_downstream_lineage_nodes(self, column_name: str, table_name: str):
+        records, _, _ = self.driver.execute_query(
+            f"""MATCH (c:Column {{name: $name, table_name: $table_name}})
+                MATCH (c)-[r:IS_DERIVED_FROM*1..3]->(related_column:Column)
+                WITH DISTINCT related_column
+                RETURN 
+                related_column.table_name + '|' + related_column.name AS column_id,
+                related_column.name AS column_name,
+                related_column.table_name AS table_name
+                """,
+                name=column_name,
+                table_name=table_name,
+                database_=self.database_,
+        )
+        return records
+    
+    def get_downstream_lineage_edges(self, column_name: str, table_name: str):
+        records, _, _ = self.driver.execute_query(
+            """MATCH (c:Column {name: $name, table_name: $table_name})
+                MATCH (c)-[r:IS_DERIVED_FROM*1..3]->(related_column:Column)
+                UNWIND r as rel
+                WITH DISTINCT rel, startNode(rel) AS startNode, endNode(rel) AS endNode
+                RETURN 
+                startNode.table_name + '|' + startNode.name AS start_id,
+                startNode.name AS start_column_name,
+                startNode.table_name AS start_table_name,
+                endNode.table_name + '|' + endNode.name AS end_id,
+                endNode.name AS end_column_name,
+                endNode.table_name AS end_table_name,
+                rel.transformation_summary AS transformation_summary
+                """,
+                name=column_name,
+                table_name=table_name,
+                database_=self.database_,
+        )
+        return records
+    
+    def get_upstream_lineage_nodes(self, column_name: str, table_name: str):
+        records, _, _ = self.driver.execute_query(
+            f"""MATCH (c:Column {{name: $name, table_name: $table_name}})
+                MATCH (c)-[r:IS_USED_BY*1..3]->(related_column:Column)
+                WITH DISTINCT related_column
+                RETURN 
+                related_column.table_name + '|' + related_column.name AS column_id,
+                related_column.name AS column_name,
+                related_column.table_name AS table_name
+                """,
+                name=column_name,
+                table_name=table_name,
+                database_=self.database_,
+        )
+        return records
+    
+    def get_upstream_lineage_edges(self, column_name: str, table_name: str):
+        records, _, _ = self.driver.execute_query(
+            """MATCH (c:Column {name: $name, table_name: $table_name})
+                MATCH (c)-[r:IS_USED_BY*1..3]->(related_column:Column)
+                UNWIND r as rel
+                WITH DISTINCT rel, startNode(rel) AS startNode, endNode(rel) AS endNode
+                RETURN 
+                startNode.table_name + '|' + startNode.name AS start_id,
+                startNode.name AS start_column_name,
+                startNode.table_name AS start_table_name,
+                endNode.table_name + '|' + endNode.name AS end_id,
+                endNode.name AS end_column_name,
+                endNode.table_name AS end_table_name,
+                rel.transformation_summary AS transformation_summary
+                """,
+                name=column_name,
+                table_name=table_name,
+                database_=self.database_,
+        )
+        return records
 
     def close(self):
         self.driver.close()
