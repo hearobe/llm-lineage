@@ -1,28 +1,31 @@
 import yaml
 from pathlib import Path
 
-from db_service import DBService
+from db_repository import DBRepository
 
 class SchemaParser:
     def parseModels(self, filepath: Path):
         fileContents = yaml.safe_load(open(filepath))
 
+        # Validate that model schema exists
         if "models" not in fileContents:
             print(f"File {filepath.name} does not contain model schema. Skipping.")
             return None
         
-        db = DBService()
+        db = DBRepository()
         
         for model in fileContents["models"]:
+            # Validate that columns of model exists
             if "name" not in model or "columns" not in model:
                 raise Exception(f"Invalid model resource in {filepath.name}")
             
             table_name = model["name"]
 
-            existing_table_records = db.find_one_table(table_name)
-            if existing_table_records is not None and len(existing_table_records) > 0:
-                print(f"{table_name} already exists, skipping creation")
-                continue
+            ## To speed up testing
+            # existing_table_records = db.find_one_table(table_name)
+            # if existing_table_records is not None and len(existing_table_records) > 0:
+            #     print(f"{table_name} already exists, skipping creation")
+            #     continue
 
             print("Populating schema for " + table_name)
 

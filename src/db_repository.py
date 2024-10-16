@@ -1,7 +1,7 @@
 import os
 from neo4j import GraphDatabase
 
-class DBService:
+class DBRepository:
     def __init__(self):
         URI = "neo4j://neo4j"
         # URI = "neo4j://localhost"
@@ -48,7 +48,7 @@ class DBService:
         
         return output_table
     
-    def find_columns_of_table(self, table_name: str):
+    def find_columns_of_table_old(self, table_name: str):
         output_columns, _, _ = self.driver.execute_query(
             """MATCH (t:Table {name: $table_name})-[:HAS_COLUMN]->(c:Column)
                 RETURN c.name as name""",
@@ -60,7 +60,7 @@ class DBService:
         
         return output_columns
     
-    def find_columns_of_table_dev(self, table_name: str):
+    def find_columns_of_table(self, table_name: str):
         output_columns, _, _ = self.driver.execute_query(
             """MATCH (t:Table {name: $table_name})-[:HAS_COLUMN]->(c:Column)
                 WHERE NOT (c)-[:IS_DERIVED_FROM]->(:Column)
@@ -70,6 +70,18 @@ class DBService:
         )
         
         return output_columns
+    
+    def find_column_in_table(self, column_name: str, table_name: str):
+        column, _, _ = self.driver.execute_query(
+            """MATCH (c:Column {name: $column_name, table_name: $table_name}) 
+                RETURN c""",
+            table_name = table_name,
+            column_name = column_name,
+            database_=self.database_,
+        )
+        print(column)
+
+        return column
     
     def create_table(self, table_name: str):
         self.driver.execute_query(
@@ -147,31 +159,39 @@ class DBService:
         nodes = [
             {
                 "id": node["column_id"],
-                "column_name": node["column_name"],
-                "table_name": node["table_name"]
+                "columnName": node["column_name"],
+                "tableName": node["table_name"]
             }
-            for node in downstream_nodes + upstream_nodes
+            for node in downstream_nodes
+        ] + [
+            {
+                "id": f"{table_name}|{column_name}",
+                "columnName": column_name,
+                "tableName": table_name
+            }
+        ] + [
+            {
+                "id": node["column_id"],
+                "columnName": node["column_name"],
+                "tableName": node["table_name"]
+            }
+            for node in upstream_nodes
         ]
-        nodes.insert(0, {
-                    "id": f"{table_name}|{column_name}",
-                    "column_name": column_name,
-                    "table_name": table_name
-                })
-        edges = downstream_edges + upstream_edges
+        edges = [
+            {
+                "startId": edge["start_id"],
+                "startColumnName": edge["start_column_name"],
+                "startTableName": edge["start_table_name"],
+                "endId": edge["end_id"],
+                "endColumnName": edge["end_column_name"],
+                "endTableName": edge["end_table_name"],
+                "transformationSummary": edge["transformation_summary"]
+            }
+            for edge in downstream_edges + upstream_edges
+        ]
         result = {
             "nodes": nodes,
-            "edges": [
-                {
-                    "startId": edge["start_id"],
-                    "startColumnName": edge["start_column_name"],
-                    "startTableName": edge["start_table_name"],
-                    "endId": edge["end_id"],
-                    "endColumnName": edge["end_column_name"],
-                    "endTableName": edge["end_table_name"],
-                    "transformationSummary": edge["transformation_summary"]
-                }
-                for edge in edges
-            ]
+            "edges": edges
         }
         return result
 
@@ -179,7 +199,7 @@ class DBService:
     def get_downstream_lineage_nodes(self, column_name: str, table_name: str):
         records, _, _ = self.driver.execute_query(
             f"""MATCH (c:Column {{name: $name, table_name: $table_name}})
-                MATCH (c)-[r:IS_DERIVED_FROM*1..3]->(related_column:Column)
+                MATCH (related_column:Column)-[r:IS_USED_BY*1..10]->(c)
                 WITH DISTINCT related_column
                 RETURN 
                 related_column.table_name + '|' + related_column.name AS column_id,
@@ -195,7 +215,7 @@ class DBService:
     def get_downstream_lineage_edges(self, column_name: str, table_name: str):
         records, _, _ = self.driver.execute_query(
             """MATCH (c:Column {name: $name, table_name: $table_name})
-                MATCH (c)-[r:IS_DERIVED_FROM*1..3]->(related_column:Column)
+                MATCH (related_column:Column)-[r:IS_USED_BY*1..10]->(c)
                 UNWIND r as rel
                 WITH DISTINCT rel, startNode(rel) AS startNode, endNode(rel) AS endNode
                 RETURN 
@@ -216,7 +236,7 @@ class DBService:
     def get_upstream_lineage_nodes(self, column_name: str, table_name: str):
         records, _, _ = self.driver.execute_query(
             f"""MATCH (c:Column {{name: $name, table_name: $table_name}})
-                MATCH (c)-[r:IS_USED_BY*1..3]->(related_column:Column)
+                MATCH (c)-[r:IS_USED_BY*1..10]->(related_column:Column)
                 WITH DISTINCT related_column
                 RETURN 
                 related_column.table_name + '|' + related_column.name AS column_id,
@@ -232,7 +252,7 @@ class DBService:
     def get_upstream_lineage_edges(self, column_name: str, table_name: str):
         records, _, _ = self.driver.execute_query(
             """MATCH (c:Column {name: $name, table_name: $table_name})
-                MATCH (c)-[r:IS_USED_BY*1..3]->(related_column:Column)
+                MATCH (c)-[r:IS_USED_BY*1..10]->(related_column:Column)
                 UNWIND r as rel
                 WITH DISTINCT rel, startNode(rel) AS startNode, endNode(rel) AS endNode
                 RETURN 

@@ -3,7 +3,7 @@ import json5
 from pydantic import BaseModel
 from openai import OpenAI
 
-from db_service import DBService
+from db_repository import DBRepository
 client = OpenAI()
 
 class SourceTableAndColumn(BaseModel):
@@ -15,25 +15,24 @@ class ColumnLineageResponse(BaseModel):
     column: str
     lineage: list[SourceTableAndColumn]
 
-class ChatSession:
+class LLMRepository:
     def __init__(self, model_name: str, model: str):
         self.model = model
         self.model_name = model_name
 
-        db = DBService()
+        db = DBRepository()
         self.schema = db.get_source_table_schema(self.get_source_table_names())
 
         self.messages = [
             {
                 "role": "system",
                 "content": 
-                    f"""You are a data analyst who is teaching someone how to trace the column lineage of a dbt SQL model with the help of the source table schema.
-                    Given a column from the output model, find the column(s) and source table(s) that the given column directly
-                    derives from. Intermediate CTEs cannot be considered source tables. Walk through how you trace through the code.
-                    After thinking about it, return only the source tables and columns. For each source column,
-                    include a one-liner summarizing the transformations done to derive the output data from source data.
+                    f"""You are a data analyst recording the column lineage of a dbt SQL model in JSON, with the help of the source table schema. 
+                    Given a column from the output model, find the column(s) and source table(s) that the given column directly derives from. 
+                    Intermediate CTEs cannot be considered source tables. Return only the source tables and columns. 
+                    For each source column, include a one-liner summarizing the transformations done to derive the output data from source data. 
                     If no transformations were done, the summary should be “No transformation done”.
-                    Please return these in a JSON format that looks something like the following:
+                    Please return these in a JSON format that looks something like the following: 
 
                     {{
                         "column": "output_column_name",
@@ -60,7 +59,8 @@ class ChatSession:
             {
                 "role": "system",
                 "content": 
-                    f"""You are a data analyst who wants to find the source tables given an SQL query. Return the source tables as a single JSON object that looks like the following, without any plaintext or formatting.
+                    f"""You are a data analyst who wants to find the source tables given an SQL query. 
+                    Return the source tables as a single JSON object that looks like the following, without any plaintext or formatting.
                         {{
                             "source_tables": ["table_name_1", "table_name_2", ...]
                         }}"""

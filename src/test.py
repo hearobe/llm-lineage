@@ -2,7 +2,7 @@ from pathlib import Path
 
 import json5
 from api_methods import initiate_lineage_trace
-from db_service import DBService
+from db_repository import DBRepository
 from model_parser import ModelParser
 from schema_parser import SchemaParser
 
@@ -16,8 +16,8 @@ from schema_parser import SchemaParser
 
 
 def manual_testing():
-    db = DBService()
-    result = db.get_lineage(column_name='district_frl_eligible_percent', table_name='dim_districts')
+    db = DBRepository()
+    result = db.get_status()
     print(result)
     # print(result[0]["transformation_summary"])
 

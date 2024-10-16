@@ -2,10 +2,10 @@ import os
 import json
 from pathlib import Path
 from neo4j import GraphDatabase
-from db_service import DBService
-from openai_service import ChatSession
+from db_repository import DBRepository
+from openai_repository import LLMRepository
 
-db = DBService()
+db = DBRepository()
 
 dirname = os.path.dirname(__file__)
 path = os.path.join(dirname, '../data/dim_district_status.sql')
@@ -35,8 +35,8 @@ full_query = Path(path).read_text()
 # Remove formatting whitespace to reduce token count
 query = " ".join(full_query.split())
 
-llm = ChatSession("dim_district_status", query)
-db = DBService()
+llm = LLMRepository("dim_district_status", query)
+db = DBRepository()
 
 for output_column in output_columns:
     print(output_column)

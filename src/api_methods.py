@@ -1,23 +1,28 @@
-from db_service import DBService
-from file_service import FileService
+from fastapi import HTTPException
+from db_repository import DBRepository
+from filesystem_repository import FilesystemRepository
 from model_parser import ModelParser
 from schema_parser import SchemaParser
 
+def validate_lineage_trace():
+    db = DBRepository()
+
+    # exit if there is an ongoing trace
+    if db.get_status() == "in_progress":
+        raise HTTPException(
+            status_code=409, 
+            detail="Cannot initiate another lineage trace while lineage trace is in progress"
+        )
+
 def initiate_lineage_trace():
+    db = DBRepository()
+    
     # set status
-    db = DBService()
     db.set_status("in_progress")
 
-    # iterate through the repo
-    ## find dbt_project.yml. retrieve the model paths specified. 
-    ## for each model path,
-    ## traverse all files and subdirectories in model path
-    ## push all yml files into an array of schema files, and all sql files into an array of model files
-    fs = FileService()
+    # Get schema and model files
+    fs = FilesystemRepository()
     schema_files, model_files = fs.get_schema_and_model_files()
-
-    # print(schema_files)
-    # print(model_files)
 
     # PARSE SCHEMA
     # for each yml file
@@ -45,7 +50,11 @@ def get_lineage_of_column(column_name: str, table_name: str, downstream_only: bo
         print("downstream_only and upstream_only cannot both be true")
         return None
 
-    db = DBService()
+    db = DBRepository()
+    if db.get_status() == "in_progress":
+        raise HTTPException(status_code=409, detail="Cannot get lineage while lineage trace is in progress")
+    if len(db.find_column_in_table(column_name, table_name)) == 0:
+        raise HTTPException(status_code=404, detail="Column does not exist")
     lineage = db.get_lineage(column_name, table_name, downstream_only, upstream_only)
     db.close()
     return lineage

@@ -1,95 +1,93 @@
-import Image from "next/image";
+'use client'
+
 import styles from "./page.module.css";
+import { LineageGraph } from "./components/LineageGraph";
+import { QueryClient, QueryClientProvider, useMutation } from "@tanstack/react-query";
+import { Box, Button, ChakraProvider, Flex, Heading, Input, Spacer, useToast } from '@chakra-ui/react'
+import { SetStateAction, useEffect, useState } from "react";
+import { Lineage, useLineage } from "./hooks/useLineage";
+import { triggerLineageTrace } from "./hooks/useTraceLineage";
+
 
 export default function Home() {
+  const [formData, setFormData] = useState({ columnName: '', tableName: '' }); // State for form data
+  const [submitData, setSubmitData] = useState<{ columnName: string, tableName: string } | null>(null)
+
+  const { data, error, isError, isLoading, refetch } = useLineage(submitData ?? {columnName: '', tableName: ''});
+  const mutation = useMutation({
+    mutationFn: triggerLineageTrace
+  })
+  const toast = useToast()
+  
+  useEffect(() => {
+    if (isError || mutation.isError) {
+      const errorCode = error?.message ?? mutation.error?.message as string
+      console.log(errorCode)
+      if (errorCode === "409") {
+        toast({
+          title: 'Lineage Trace in progress',
+          description: "Please wait till the lineage trace has completed",
+          status: 'error',
+          duration: 9000,
+          isClosable: true,
+        })
+      } else if (errorCode === "404") {
+        toast({
+          title: 'Column not found',
+          description: "Please enter a column that exists in the database",
+          status: 'error',
+          duration: 9000,
+          isClosable: true,
+        })
+      }
+    }
+  }, [isError, mutation.isError, error, mutation.error])
+
+  
+  
+  const handleSubmit = (e: { preventDefault: () => void; }) => {
+    e.preventDefault();
+    // Only trigger the useLineage hook if both inputs are filled
+    if (formData) {
+      setSubmitData(formData); // Trigger the query by setting submitData
+      refetch()
+    }
+  };
+
+  const handleChange = (e:any) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
   return (
     <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <ChakraProvider>
+          <div style={{ width: '100vw', height: '100vh', position: 'fixed' }}>
+            <Flex style={{ 
+              height: '64px',
+              padding:'12px',
+              backgroundColor: '#e1e2e3',
+              alignItems: 'center',
+              borderBottomColor: '#1E293B',
+              borderBottomWidth: '4px'
+            }}>
+              <Heading size='md' color='#1E293B'>LLM LINEAGE</Heading>
+              <Spacer />
+              <Flex>
+                <Input name="columnName" value={formData.columnName} onChange={handleChange} placeholder='Column name' variant='filled' size='md' width='256px' marginX='4px'/>
+                <Input name="tableName" value={formData.tableName} onChange={handleChange} placeholder='Table name' variant='filled' size='md' width='256px' marginX='4px'/>
+                <Button onClick={handleSubmit} marginX='4px' colorScheme='blue' variant='solid'>Search</Button>
+                <Button marginX='4px' onClick={() => {
+                    mutation.mutate()
+                  }}
+                >Trace lineage</Button>
+              </Flex>
+            </Flex>
+            <LineageGraph data={data}/>
+          </div>
+        </ChakraProvider>
     </div>
   );
 }

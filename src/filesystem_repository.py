@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import List
 import yaml
 
-class FileService:
+class FilesystemRepository:
     def __init__(self):
         # find root of repo
         repo_paths: List[Path] = []
