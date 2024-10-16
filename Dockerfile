@@ -2,7 +2,7 @@
 FROM python:3.10-slim-buster
 
 RUN apt-get update \
-  && apt-get -y install libpq-dev gcc git
+  && apt-get -y install libpq-dev gcc git openssl
 
 # Set the working directory to /app
 WORKDIR /app
@@ -19,10 +19,6 @@ ENV REPOSITORY_URL=$REPOSITORY_URL
 RUN [ ! -d "/repo/.git" ] && git clone $REPOSITORY_URL repo || echo "Repository already cloned"
 
 COPY ./src /app/src
-
-# # TODO remove after testing is complete
-# # COPY ./data /app/data
-# CMD ["python", "src/test.py"]
 
 # starts the API
 CMD ["fastapi", "run", "src/main.py", "--port", "8000"]
