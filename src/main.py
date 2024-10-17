@@ -5,7 +5,6 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
 from api_methods import get_lineage_of_column, initiate_lineage_trace, validate_lineage_trace
-from test import manual_testing
 
 origins = [
     "http://localhost",
@@ -36,11 +35,6 @@ def request_lineage_trace(background_tasks: BackgroundTasks):
     validate_lineage_trace()
     background_tasks.add_task(initiate_lineage_trace)
     return {"message": "Lineage trace started"}
-
-@app.post("/test")
-def test():
-    manual_testing()
-    return {"message": "initiated test"}
 
 class LineageTraceStatus(BaseModel):
     succeeded: bool

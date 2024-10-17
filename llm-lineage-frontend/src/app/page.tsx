@@ -2,10 +2,10 @@
 
 import styles from "./page.module.css";
 import { LineageGraph } from "./components/LineageGraph";
-import { QueryClient, QueryClientProvider, useMutation } from "@tanstack/react-query";
-import { Box, Button, ChakraProvider, Flex, Heading, Input, Spacer, useToast } from '@chakra-ui/react'
-import { SetStateAction, useEffect, useState } from "react";
-import { Lineage, useLineage } from "./hooks/useLineage";
+import { useMutation } from "@tanstack/react-query";
+import { Button, ChakraProvider, Flex, Heading, Input, Spacer, useToast } from '@chakra-ui/react'
+import { useEffect, useState } from "react";
+import { useLineage } from "./hooks/useLineage";
 import { triggerLineageTrace } from "./hooks/useTraceLineage";
 
 
@@ -25,7 +25,7 @@ export default function Home() {
       console.log(errorCode)
       if (errorCode === "409") {
         toast({
-          title: 'Lineage Trace in progress',
+          title: 'Lineage trace in progress',
           description: "Please wait till the lineage trace has completed",
           status: 'error',
           duration: 9000,
